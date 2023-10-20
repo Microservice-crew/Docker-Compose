@@ -1,24 +1,7 @@
 version: "3.7"
 
 services:
-  ################### DATABASES ###################
-  docker-mysql_1:
-    container_name: mariadb_mysql_database
-    image: "mariadb:latest"
-    environment:
-      - MARIADB_ROOT_PASSWORD=root
-      - MARIADB_DATABASE=hotelManagement
-    ports:
-      - 3306:3306
-    restart: unless-stopped  
 
-  # docker-mysql_2:
-  #   image: "mariadb:latest"
-  #   environment:
-  #     - MARIADB_ROOT_PASSWORD=root
-  #     - MARIADB_DATABASE=hotelManagement
-  #   ports:
-  #     - 3307:3307
 
   ################### DISCOVERY SERVER ( eureka) ###################
   discovery_service:
