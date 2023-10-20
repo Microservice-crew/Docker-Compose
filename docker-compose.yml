@@ -4,7 +4,7 @@ services:
 
 
   ################### DISCOVERY SERVER ( eureka) ###################
-  discovery_service:
+  Eureka:
     container_name: serviceregistry
     build: /eureka_server
     ports:
@@ -15,23 +15,16 @@ services:
       - eureka.client.serviceUrl.defaultZone=http://serviceregistry:8761/eureka/
 
   ################### MICROSERVICES ###################
-  mscustomerreview:
-    container_name: ms_customer_review
-    build:
-      context: ./ms_customer_review 
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    environment:
-      - spring.datasource.url=jdbc:mysql://docker-mysql_1:3306/hotelManagement?autoReconnect=true&useSSL=false
-      - spring.datasource.username=root
-      - spring.datasource.password=root
-      - eureka.client.serviceUrl.defaultZone=http://serviceregistry:8761/eureka/
+    Staff:
+    container_name: staff
+    image: "staff"
+    build: .\Staff
     ports:
-      - "8082:8082"
-    image: customer_review
+      - "8082:8082"   
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
     depends_on:
-      - discovery_service
-      - docker-mysql_1
+      - "Eureka"
 
   msusermanagement:
     container_name: ms_user_management
