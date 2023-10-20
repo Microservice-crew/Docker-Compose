@@ -26,62 +26,54 @@ services:
     depends_on:
       - "Eureka"
 
-  msusermanagement:
-    container_name: ms_user_management
-    build:
-      context: ./ms_user_management 
-      dockerfile: Dockerfile
-    hostname: ms_user_management
-    environment:
-      - POSTGRES_HOST=docker-postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=admin
-      - POSTGRES_DATABASE=ms_auth_DB
-      - EUREKA_HOST=serviceregistry
-      - EUREKA_PORT=8761
-      - EUREKA_SEVERPATH=/eureka/apps
+   Car:
+    container_name: CarServices
+    image: "CarServices"
+    build: .\CarServices
     ports:
-      - '7000:7000'
-    image: ms_auth
-    depends_on:
-      - discovery_service
-      - docker-postgres
-
-
-
-  msinventorymanagement:
-    container_name: ms_inventory_management
-    build:
-      context: ./ms_inventory_management
-      dockerfile: Dockerfile
-    restart: unless-stopped
+      - "8083:8083"   
     environment:
-      - spring.datasource.url=jdbc:mysql://docker-mysql_1:3306/hotelManagement?autoReconnect=true&useSSL=false
-      - spring.datasource.username=root
-      - spring.datasource.password=root
-      - eureka.client.serviceUrl.defaultZone=http://serviceregistry:8761/eureka/
-    ports:
-      - "8087:8087"
-    image: inventory_management
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
     depends_on:
-      - discovery_service
-      - docker-mysql_1
+      - "Eureka"
+      
+   
+    Sponsor:
+        container_name: SponsorServices
+        image: "SponsorServices"
+        build: .\SponsorServices
+        ports:
+          - "8084:8084"   
+        environment:
+          - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
+        depends_on:
+          - "Eureka"
+          
+    Hotel:
+        container_name: HotelServices
+        image: "HotelServices"
+        build: .\HotelServices
+        ports:
+          - "8085:8085"
+        environment:
+          - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
+        depends_on:
+          - "Eureka"
+   
+   
+    Flight:
+        container_name: FlightServices
+        image: "FlightServices"
+        build: .\FlightServices
+        ports:
+          - "8086:8086"
+        environment:
+          - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
+        depends_on:
+          - "Eureka"
 
-  # saff_management_service:
-  #   build: /ms_saff_management
-  #   environment:
-  #     - spring.datasource.url=jdbc:mysql://docker-mysql_2:3307/hotelManagement?autoReconnect=true&useSSL=false
-  #     - spring.datasource.username=root
-  #     - spring.datasource.password=root
-  #     - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL5InnoDBDialect
-  #     - eureka.client.serviceUrl.defaultZone=http://serviceregistry:8761/eureka/
-  #   ports:
-  #     - "8086:8086"
-  #   image: saff_management
-  #   depends_on:
-  #     - discovery_service
-  #     - docker-mysql_2
+
+ 
 
   ################### GATEWAY SERVER  ###################
   gateway_service:
