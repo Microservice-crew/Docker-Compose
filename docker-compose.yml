@@ -20,16 +20,6 @@ services:
   #   ports:
   #     - 3307:3307
 
-  docker-postgres:
-    container_name: postgres_database
-    image: postgres
-    ports:
-      - 5432:5432
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=admin
-      - POSTGRES_DB=ms_auth_DB
-
   ################### DISCOVERY SERVER ( eureka) ###################
   discovery_service:
     container_name: serviceregistry
