@@ -1,0 +1,148 @@
+version: "3.7"
+
+services:
+  ################### DATABASES ###################
+  docker-mysql_1:
+    container_name: mariadb_mysql_database
+    image: "mariadb:latest"
+    environment:
+      - MARIADB_ROOT_PASSWORD=root
+      - MARIADB_DATABASE=hotelManagement
+    ports:
+      - 3306:3306
+    restart: unless-stopped  
+
+  # docker-mysql_2:
+  #   image: "mariadb:latest"
+  #   environment:
+  #     - MARIADB_ROOT_PASSWORD=root
+  #     - MARIADB_DATABASE=hotelManagement
+  #   ports:
+  #     - 3307:3307
+
+  docker-postgres:
+    container_name: postgres_database
+    image: postgres
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=ms_auth_DB
+
+  ################### DISCOVERY SERVER ( eureka) ###################
+  discovery_service:
+    container_name: serviceregistry
+    build: /eureka_server
+    ports:
+      - "8761:8761"
+    hostname: serviceregistry
+    image: erueka_service
+    environment:
+      - eureka.client.serviceUrl.defaultZone=http://serviceregistry:8761/eureka/
+
+  ################### MICROSERVICES ###################
+  mscustomerreview:
+    container_name: ms_customer_review
+    build:
+      context: ./ms_customer_review 
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - spring.datasource.url=jdbc:mysql://docker-mysql_1:3306/hotelManagement?autoReconnect=true&useSSL=false
+      - spring.datasource.username=root
+      - spring.datasource.password=root
+      - eureka.client.serviceUrl.defaultZone=http://serviceregistry:8761/eureka/
+    ports:
+      - "8082:8082"
+    image: customer_review
+    depends_on:
+      - discovery_service
+      - docker-mysql_1
+
+  msusermanagement:
+    container_name: ms_user_management
+    build:
+      context: ./ms_user_management 
+      dockerfile: Dockerfile
+    hostname: ms_user_management
+    environment:
+      - POSTGRES_HOST=docker-postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DATABASE=ms_auth_DB
+      - EUREKA_HOST=serviceregistry
+      - EUREKA_PORT=8761
+      - EUREKA_SEVERPATH=/eureka/apps
+    ports:
+      - '7000:7000'
+    image: ms_auth
+    depends_on:
+      - discovery_service
+      - docker-postgres
+
+
+
+  msinventorymanagement:
+    container_name: ms_inventory_management
+    build:
+      context: ./ms_inventory_management
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - spring.datasource.url=jdbc:mysql://docker-mysql_1:3306/hotelManagement?autoReconnect=true&useSSL=false
+      - spring.datasource.username=root
+      - spring.datasource.password=root
+      - eureka.client.serviceUrl.defaultZone=http://serviceregistry:8761/eureka/
+    ports:
+      - "8087:8087"
+    image: inventory_management
+    depends_on:
+      - discovery_service
+      - docker-mysql_1
+
+  # saff_management_service:
+  #   build: /ms_saff_management
+  #   environment:
+  #     - spring.datasource.url=jdbc:mysql://docker-mysql_2:3307/hotelManagement?autoReconnect=true&useSSL=false
+  #     - spring.datasource.username=root
+  #     - spring.datasource.password=root
+  #     - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL5InnoDBDialect
+  #     - eureka.client.serviceUrl.defaultZone=http://serviceregistry:8761/eureka/
+  #   ports:
+  #     - "8086:8086"
+  #   image: saff_management
+  #   depends_on:
+  #     - discovery_service
+  #     - docker-mysql_2
+
+  ################### GATEWAY SERVER  ###################
+  gateway_service:
+    container_name: gateway_server
+    build: ./gateway-service
+    image: gateway_service
+    depends_on:
+     - discovery_service
+     - docker-mysql_1
+     - docker-postgres
+    ports:
+      - "8089:8089"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
+      - EUREKA_INSTANCE_LEASERENEWALINTERVALINSECONDS=10
+      - EUREKA_INSTANCE_LEASEEXPIRATIONDURATIONINSECONDS=30
+
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_ID=Mscustomerreview
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_URI=http://Mscustomerreview:8082
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0=Path=/api/feedback/**
+
+      - SPRING_CLOUD_GATEWAY_ROUTES_1_ID=msinventorymanagement
+      - SPRING_CLOUD_GATEWAY_ROUTES_1_URI=http://msinventorymanagement:8087
+      - SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0=Path=/api/item/**
+
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_ID=Msusermanagement
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_URI=http://Msusermanagement:7000
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0=Path=/**
+
+
