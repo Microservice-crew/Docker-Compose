@@ -14,6 +14,19 @@ services:
     environment:
       - eureka.client.serviceUrl.defaultZone=http://serviceregistry:8761/eureka/
 
+
+       ################### BACKEND SERVER ###################
+  Backend:
+    container_name: backend
+    build: ./path/to/your/backend/directory
+    ports:
+      - "3000:3000"
+    image: your-backend-image
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
+    depends_on:
+      - Eureka
+
   ################### MICROSERVICES ###################
     Staff:
     container_name: staff
