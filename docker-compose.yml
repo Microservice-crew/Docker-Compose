@@ -95,8 +95,6 @@ services:
     image: gateway_service
     depends_on:
      - discovery_service
-     - docker-mysql_1
-     - docker-postgres
     ports:
       - "8089:8089"
     environment:
