@@ -18,10 +18,10 @@ services:
        ################### BACKEND SERVER ###################
   Backend:
     container_name: backend
-    build: ./path/to/your/backend/directory
+    build: /backend
     ports:
       - "3000:3000"
-    image: your-backend-image
+    image: backend
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
     depends_on:
