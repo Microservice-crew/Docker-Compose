@@ -1,126 +1,88 @@
-version: "3.7"
-
+version: "3.9"
 services:
 
 
-  ################### DISCOVERY SERVER ( eureka) ###################
+  docker-mongodb:
+    container_name: docker-mongodb
+    image: mongo
+    ports:
+      - 27017:27017
+    environment:
+      - MONGODB_URL=mongodb+srv://admin:123@kadercluster.clqwvc9.mongodb.net/Ecommerce
+    restart: unless-stopped
+    depends_on:
+      - Eureka
+
+  Flight:
+    container_name: Flight
+    image: "flight"
+    build: .\Flight
+    ports:
+      - "8083:8083"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
+    depends_on:
+      - "Eureka"
+
+
   Eureka:
-    container_name: serviceregistry
-    build: /eureka_server
+    container_name: eureka
+    build: .\eureka
+    hostname: serviceregistry
     ports:
       - "8761:8761"
-    hostname: serviceregistry
-    image: erueka_service
+    image: "eureka"
     environment:
       - eureka.client.serviceUrl.defaultZone=http://serviceregistry:8761/eureka/
 
-
-       ################### BACKEND SERVER ###################
-  Backend:
-    container_name: backend
-    build: /backend
+  Staff:
+    container_name: staff
+    image: "staff"
+    build: .\Staff
     ports:
-      - "3000:3000"
-    image: backend
+      - "8082:8082"
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
     depends_on:
       - Eureka
 
-  ################### MICROSERVICES ###################
-    Staff:
-    container_name: staff
-    image: "staff"
-    build: .\Staff
+  Backend:
+    container_name: backend
+    build: /backend
     ports:
-      - "8082:8082"   
+      - "9000:9000"
+    image: backend
     environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
+      - MONGODB_URL=mongodb+srv://admin:123@kadercluster.clqwvc9.mongodb.net/Ecommerce?retryWrites=true&w=majority
+      - EUREKA_HOST=serviceregistry
+      - EUREKA_PORT=8761
+      - EUREKA_SERVER_PATH=/eureka/apps/
     depends_on:
-      - "Eureka"
+      - Eureka
+      - docker-mongodb
 
-   Car:
-    container_name: CarServices
-    image: "CarServices"
-    build: .\CarServices
+
+
+  ApiGateway:
+    container_name: gateway
+    build: .\API_GATEWAY_SERVER
+    image: "gateway"
+    restart: always
+    depends_on:
+      - Eureka
+      - docker-mongodb
     ports:
-      - "8083:8083"   
+      - "9999:9999"
     environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
-    depends_on:
-      - "Eureka"
-      
-   
-    Sponsor:
-        container_name: SponsorServices
-        image: "SponsorServices"
-        build: .\SponsorServices
-        ports:
-          - "8084:8084"   
-        environment:
-          - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
-        depends_on:
-          - "Eureka"
-          
-    Hotel:
-        container_name: HotelServices
-        image: "HotelServices"
-        build: .\HotelServices
-        ports:
-          - "8085:8085"
-        environment:
-          - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
-        depends_on:
-          - "Eureka"
-   
-   
-    Flight:
-        container_name: FlightService
-        image: "FlightService"
-        build: .\FlightService
-        ports:
-          - "8086:8086"
-        environment:
-          - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
-        depends_on:
-          - "Eureka"
-
-
- 
-
-  ################### GATEWAY SERVER  ###################
-  gateway_service:
-    container_name: gateway_server
-    build: ./gateway-service
-    image: gateway_service
-    depends_on:
-     - discovery_service
-    ports:
-      - "8089:8089"
-    environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://Eureka:8761/eureka/
       - EUREKA_INSTANCE_LEASERENEWALINTERVALINSECONDS=10
       - EUREKA_INSTANCE_LEASEEXPIRATIONDURATIONINSECONDS=30
-
-      - SPRING_CLOUD_GATEWAY_ROUTES_0_ID=Staff
-      - SPRING_CLOUD_GATEWAY_ROUTES_0_URI=http://Staff:8082
-      - SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0=Path=/api/feedback/**
-
-      - SPRING_CLOUD_GATEWAY_ROUTES_1_ID=Car
-      - SPRING_CLOUD_GATEWAY_ROUTES_1_URI=http://Car:8083
-      - SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0=Path=/api/item/**
-      
-      - SPRING_CLOUD_GATEWAY_ROUTES_2_ID=Sponsor
-      - SPRING_CLOUD_GATEWAY_ROUTES_2_URI=http://Sponsor:8084
-      - SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0=Path=/api/feedback/**
-
-      - SPRING_CLOUD_GATEWAY_ROUTES_3_ID=Hotel
-      - SPRING_CLOUD_GATEWAY_ROUTES_3_URI=http://Hotel:8085
-      - SPRING_CLOUD_GATEWAY_ROUTES_3_PREDICATES_0=Path=/api/item/**
-
-      - SPRING_CLOUD_GATEWAY_ROUTES_4_ID=Flight
-      - SPRING_CLOUD_GATEWAY_ROUTES_4_URI=http://Flight:8086
-      - SPRING_CLOUD_GATEWAY_ROUTES_4_PREDICATES_0=Path=/**
-
-
-
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_ID=Flight
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_URI=http://Flight:8083
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0=Path=/flights/**
+      - SPRING_CLOUD_GATEWAY_ROUTES_1_ID=Staff
+      - SPRING_CLOUD_GATEWAY_ROUTES_1_URI=http://Staff:8082
+      - SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0=Path=/api/staff/**
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_ID=nodejsback
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_URI=http://localhost:9000
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0=Path=/**
