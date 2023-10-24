@@ -8,7 +8,7 @@ services:
     ports:
       - 27017:27017
     environment:
-      - MONGODB_URL=mongodb+srv://admin:123@kadercluster.clqwvc9.mongodb.net/Ecommerce
+      - MONGODB_URL=mongodb://localhost:27017/MicroService
     restart: unless-stopped
     depends_on:
       - Eureka
@@ -26,12 +26,12 @@ services:
 
 
   Eureka:
-    container_name: eureka
-    build: .\eureka
+    container_name: servereureka
+    build: .\servereureka
     hostname: serviceregistry
     ports:
       - "8761:8761"
-    image: "eureka"
+    image: "servereureka"
     environment:
       - eureka.client.serviceUrl.defaultZone=http://serviceregistry:8761/eureka/
 
@@ -46,27 +46,60 @@ services:
     depends_on:
       - Eureka
 
-  Backend:
-    container_name: backend
-    build: /backend
+  Hotel:
+    container_name: hotel
+    image: "hotel"
+    build: .\HotelServices
     ports:
-      - "9000:9000"
-    image: backend
+      - "8084:8084"
     environment:
-      - MONGODB_URL=mongodb+srv://admin:123@kadercluster.clqwvc9.mongodb.net/Ecommerce?retryWrites=true&w=majority
-      - EUREKA_HOST=serviceregistry
-      - EUREKA_PORT=8761
-      - EUREKA_SERVER_PATH=/eureka/apps/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
     depends_on:
       - Eureka
-      - docker-mongodb
+  
+  Car:
+    container_name: car
+    image: "car"
+    build: .\Car
+    ports:
+      - "8085:8085"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
+    depends_on:
+      - Eureka
+  
+  Sponsor:
+    container_name: sponsor
+    image: "sponsor"
+    build: .\Sponsor
+    ports:
+      - "8086:8086"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://serviceregistry:8761/eureka/
+    depends_on:
+      - Eureka
+
+  # Backend:
+  #   container_name: backend
+  #   build: /backend
+  #   ports:
+  #     - "9000:9000"
+  #   image: backend
+  #   environment:
+  #     - MONGODB_URL=mongodb+srv://admin:123@kadercluster.clqwvc9.mongodb.net/Ecommerce?retryWrites=true&w=majority
+  #     - EUREKA_HOST=serviceregistry
+  #     - EUREKA_PORT=8761
+  #     - EUREKA_SERVER_PATH=/eureka/apps/
+  #   depends_on:
+  #     - Eureka
+  #     - docker-mongodb
 
 
 
   ApiGateway:
-    container_name: gateway
-    build: .\API_GATEWAY_SERVER
-    image: "gateway"
+    container_name: apigateway
+    build: .\apigateway
+    image: "apigateway"
     restart: always
     depends_on:
       - Eureka
@@ -83,6 +116,15 @@ services:
       - SPRING_CLOUD_GATEWAY_ROUTES_1_ID=Staff
       - SPRING_CLOUD_GATEWAY_ROUTES_1_URI=http://Staff:8082
       - SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0=Path=/api/staff/**
-      - SPRING_CLOUD_GATEWAY_ROUTES_2_ID=nodejsback
-      - SPRING_CLOUD_GATEWAY_ROUTES_2_URI=http://localhost:9000
-      - SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0=Path=/**
+      # - SPRING_CLOUD_GATEWAY_ROUTES_2_ID=nodejsback
+      # - SPRING_CLOUD_GATEWAY_ROUTES_2_URI=http://localhost:9000
+      # - SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0=Path=/**
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_ID=Hotel
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_URI=http://Hotel:8084
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0=Path=/api/hotel/**
+      - SPRING_CLOUD_GATEWAY_ROUTES_3_ID=Car
+      - SPRING_CLOUD_GATEWAY_ROUTES_3_URI=http://Car:8085
+      - SPRING_CLOUD_GATEWAY_ROUTES_3_PREDICATES_0=Path=/api/car/**
+      - SPRING_CLOUD_GATEWAY_ROUTES_4_ID=Sponsor
+      - SPRING_CLOUD_GATEWAY_ROUTES_4_URI=http://Sponsor:8086
+      - SPRING_CLOUD_GATEWAY_ROUTES_4_PREDICATES_0=Path=/api/sponsor/**
